@@ -1,1 +1,5 @@
-# yuxuanliuliuliu.github.io
+# 刷题日记
+
+[二分查找](./数组.md)
+
+
