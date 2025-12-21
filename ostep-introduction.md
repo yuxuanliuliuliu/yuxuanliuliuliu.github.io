@@ -23,6 +23,7 @@ which handles the requests.
 build abstractions. high performance, minimize overhead. protection, isolation is key part of protecting process from other bad process.
 
 # The process
+<details>
 A process is a running program. One often wants to run many programs. OS virtualizes CPU by running one process, stop it and switch to another one.
 This technique is also known as time sharing allowing users to run many concurrent processes. The tradeoff is performance. To fulfill virtualization
 we need some low level mechanisms, and high leven intelligence. Context switch allows OS to stop one program and run another. This is also 
@@ -55,3 +56,39 @@ move from ready to running means the process has been schdules, otherwise desche
 **data structures**
 OS needs data structure to track indormation on processes, their states. Process list: a process list of processes, information about all 
 process in a system. Each entry is called process control block PCB or process descriptor, information about a process.
+</details>
+
+# mechanism: limited direct execution
+
+Motivation: how to virtualize cpu without too much overhead and with control over process.
+
+Solution: limited direct execution
+
+Direct execution on CPU is fast but process may abuses a system. OS doesn't want to give complete control to the process, but a process still need to be able to perform IO and some
+restricted operations.
+
+the approach we take is **user mode**: code in user mode is restricted what it can do. eg cant issue io request. program do not have full access to hardware resources
+in contract is **kernel mode** : OS runs in kernel mode, code can executing privileged instrictions eg IO requests, OS has full access machine resources.
+for user process to perform privileged operation, user programs perform a **system call** 
+
+to execute a system call, a program must executes **trap** instruction. this instruction jumps into the kernel and raises privilege level to kernel mode. The
+system then can perfom privileged operations. When finishes, OS call **return from trap** return to user program and reduce privilege back to user mode. Hardware
+needs to remember where to return back. Put some registers onto **kernel stack** and pop after finishing. How does trap know which code to run? Kernel
+does this by setting a **trap table**. This tell hardware what code to run when a something happens. OS tells the harsware locations of the trap handlers, so 
+hardware know hat code to jump to when system calls and other exeptions happen. **A system call number** is assigned to each system call to make it exact. 
+User code needs to place system call number in register, or any location on the stack. The OS when encountering inside trap hanler, examine the number and execute code.
+Actually, user code only request a service via number. Tell hardware where trap tables are is privileged operation.
+
+**switch between processes**
+
+When program is running on cpu, os is not, how os take control? in **cooperative approach** OS may regain contro by waiting for a system call or illegal operation.
+**a non-cooperative approach** A **time interrupt**, a time devide raises interrupt every many milliseconds, running process is haltes, interrupt handler in OS
+runs. Hardware also has to remember to save state of the program eg registers, pc... onto kernel stack.
+
+To decide which process to run next is done by **scheduler**. **Context switch** all the os to do is saving register values. os execute low level assembly
+code to save general registers, pc, kernel stack pointer. When time inerrupt happens during A's execution.
+cpu switch to from user mode to kernel mode, to A kernel stack, save user registers to kernel stack, done by software. A is in kernel.
+Now in kernel mode and A's execution state, OS saves these into A PCB. Loads B's saved registers from PCB, switch to B kernel stack, restore execution. It's like
+trapped into kernel B.
+
+Overall, let program run whatever it want to run, but set up limit in hardware.
